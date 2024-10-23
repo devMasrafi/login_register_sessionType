@@ -12,7 +12,7 @@ const registerUser = async (req, res) =>{
     }
 
     // HashPassword for Security
-    const hashPassword = await bcrypt.has(userPasoword, 10)
+    const hashPassword = await bcrypt.hash(userPasoword, 10)
 
     // create new user 
     const newUser = new user({
@@ -28,24 +28,42 @@ const registerUser = async (req, res) =>{
     
 }
 
-const loginUser = async (req, res) =>{
+const loginUser = async (req, res, next) =>{
     const {userEmail, password} = req.body
 
-    // find email of user
-    const user = await User.findOne({userEmail})
-    if(!user){
-        return res.json({error: "User not found"})
-    }
-    // check password of user
-    const isPassowrdMatch = await bcrypt.compare(password, user.password)
-    if (!isPassowrdMatch) {
-        return res.json({error: "Invalid Password"})
-    }
+    try {
+        // // find email of user
+        // const userFound = await User.findOne({userEmail})
+        // if(!userFound){
+        //     return res.json({error: "User not found"})
+        // }
+        // // check password of user
+        // const isPassowrdMatch = await bcrypt.compare(password, users.password)
+        // if (!isPassowrdMatch) {
+        //     return res.json({error: "Invalid Password"})
+        // }
+        // res.json({massage: "login successfull", token})
+        
+        // check if the email exist
+        const userFound = await User.findOne({email})
+        if(!userFound){
+            // throw an error
+            return next('invalid login credentials')
 
-    const token = jwt.sign({userId: user._id}, "user_secret_key", { expiresIn: '1h'} )
+        }
 
-    res.json({massage: "login successfull", token})
+        // password verify
+        const isPasswordValid = await bcypt.compare(password, userFound.password)
+
+        if (!isPasswordValid) {
+            // throw an error
+            return next('invalid login credentials')
+        }
+
+    } catch (error) {
+        res.json(error)
+    }
 
 }
 
-module.exports = { registerUser}
+module.exports = { registerUser, loginUser}
